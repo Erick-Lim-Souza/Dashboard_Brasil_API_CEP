@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Brasil API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px; /* Reduzido de 300px para 20px */
+            background-color: #2fa865;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        input {
+            width: 40%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .card {
+            background: #f9f9f9;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .card h2 {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dashboard Brasil API</h1>
+        <input type="text" id="cep" placeholder="Digite o CEP (somente números)">
+        <button onclick="buscarDashboard()">Buscar</button>
+
+        <div id="dashboard"></div>
+    </div>
+
+    <script>
+        function buscarDashboard() {
+            const cep = document.getElementById('cep').value;
+            const dashboardDiv = document.getElementById('dashboard');
+
+            if (!/^\d{8}$/.test(cep)) {
+                dashboardDiv.innerHTML = '<div class="card"><p>CEP inválido. Digite exatamente 8 números.</p></div>';
+                return;
+            }
+
+            fetch(`http://127.0.0.1:5500/dashboard/${cep}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        dashboardDiv.innerHTML = `<div class="card"><p>${data.error}</p></div>`;
+                        return;
+                    }
+
+                    dashboardDiv.innerHTML = `
+                        <div class="card">
+                            <h2>CEP</h2>
+                            <p><strong>Endereço:</strong> ${data.cep?.street || 'Não disponível'}, 
+                               ${data.cep?.neighborhood || 'Não disponível'}, 
+                               ${data.cep?.city || 'Não disponível'}/${data.cep?.state || 'Não disponível'}
+                            </p>
+                            <p><strong>CEP:</strong> ${data.cep?.cep}</p>
+                            <p><strong>DDD:</strong> ${data.cep?.ddd || 'Não disponível'}</p>
+                        </div>
+                        <div class="card">
+                            <h2>IBGE</h2>
+                            ${data.ibge && !data.ibge.error ? `
+                                <p><strong>Código:</strong> ${data.ibge.codigo_ibge}</p>
+                                <p><strong>Nome:</strong> ${data.ibge.nome}</p>
+                            ` : '<p>Dados do IBGE não encontrados.</p>'}
+                        </div>
+                        <div class="card">
+                            <h2>DDD</h2>
+                            ${data.ddd && !data.ddd.error ? `
+                                <p><strong>Estado:</strong> ${data.ddd.state}</p>
+                                <p><strong>Cidades:</strong> ${data.ddd.cities.join(', ')}</p>
+                            ` : '<p>Dados do DDD não encontrados.</p>'}
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar dados', error);
+                    dashboardDiv.innerHTML = `<div class="card"><p>Erro ao buscar dados. Verifique a conexão ou tente novamente mais tarde.</p></div>`;
+                });
+        }
+    </script>
+</body>
+</html>
